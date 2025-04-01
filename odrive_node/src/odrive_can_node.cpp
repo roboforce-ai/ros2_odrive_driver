@@ -161,12 +161,12 @@ void ODriveCanNode::recv_callback(const can_frame& frame) {
         }
     }
     
-    if (ctrl_pub_flag_ == 0b1111) {
+    if (ctrl_pub_flag_ == 0b0111) {
         ctrl_publisher_->publish(ctrl_stat_);
         ctrl_pub_flag_ = 0;
     }
     
-    if (odrv_pub_flag_ == 0b111) {
+    if (odrv_pub_flag_ == 0b100) {
         odrv_publisher_->publish(odrv_stat_);
         odrv_pub_flag_ = 0;
     }

@@ -1,0 +1,29 @@
+switch state to close-loop control
+ros2 service call /odrive_axis0/request_axis_state odrive_can/srv/AxisState "{axis_requested_state: 8}"
+
+switch state to idle
+ros2 service call /odrive_axis0/request_axis_state odrive_can/srv/AxisState "{axis_requested_state: 1}"
+
+Input Mode
+https://docs.odriverobotics.com/v/latest/fibre_types/com_odriverobotics_ODrive.html#ODrive.Controller.InputMode
+
+torque control: 
+control mode = 1
+input mode = 1 passthrough mode
+input_torque = in Nm
+ros2 topic pub /odrive_axis0/control_message odrive_can/msg/ControlMessage "{control_mode: 1, input_mode: 1, input_torque: 1.0, input_pos: 0.0, input_vel: 0.0}"
+
+
+vel control: 
+control mode = 2
+input mode = 1 passthrough mode
+input vel = in rps
+gear ratio = 9.67
+
+pos control: 
+control mode = 3
+input mode = 1 passthrough mode
+input pos = in rev
+
+clear error
+ros2 service call /odrive_axis0/clear_errors std_srvs/srv/Empty
