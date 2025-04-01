@@ -10,6 +10,10 @@
 
 namespace odrive_ros2_control {
 
+
+constexpr double torque_constant = 0.042; // Nm/A, used to convert from and to ODrive torque units
+constexpr double gear_ratio = 9.67; // used to convert from and to ODrive position, velocity units
+
 class Axis;
 
 class ODriveHardwareInterface final : public hardware_interface::SystemInterface {
@@ -266,18 +270,18 @@ return_type ODriveHardwareInterface::write(const rclcpp::Time&, const rclcpp::Du
         // Send the CAN message that fits the set of enabled setpoints
         if (axis.pos_input_enabled_) {
             Set_Input_Pos_msg_t msg;
-            msg.Input_Pos = axis.pos_setpoint_ / (2 * M_PI);
-            msg.Vel_FF = axis.vel_input_enabled_ ? (axis.vel_setpoint_ / (2 * M_PI)) : 0.0f;
+            msg.Input_Pos = (axis.pos_setpoint_ * gear_ratio) / (2 * M_PI);
+            msg.Vel_FF = axis.vel_input_enabled_ ? ((axis.vel_setpoint_ * gear_ratio) / (2 * M_PI)) : 0.0f;
             msg.Torque_FF = axis.torque_input_enabled_ ? axis.torque_setpoint_ : 0.0f;
             axis.send(msg);
         } else if (axis.vel_input_enabled_) {
             Set_Input_Vel_msg_t msg;
-            msg.Input_Vel = axis.vel_setpoint_ / (2 * M_PI);
+            msg.Input_Vel = (axis.vel_setpoint_ * gear_ratio) / (2 * M_PI);
             msg.Input_Torque_FF = axis.torque_input_enabled_ ? axis.torque_setpoint_ : 0.0f;
             axis.send(msg);
         } else if (axis.torque_input_enabled_) {
             Set_Input_Torque_msg_t msg;
-            msg.Input_Torque = axis.torque_setpoint_;
+            msg.Input_Torque = axis.torque_setpoint_ / torque_constant; // control interface unit: Nm, ODrive unit: A
             axis.send(msg);
         } else {
             // no control enabled - don't send any setpoint
@@ -348,14 +352,15 @@ void Axis::on_can_msg(const rclcpp::Time&, const can_frame& frame) {
     switch (cmd) {
         case Get_Encoder_Estimates_msg_t::cmd_id: {
             if (Get_Encoder_Estimates_msg_t msg; try_decode(msg)) {
-                pos_estimate_ = msg.Pos_Estimate * (2 * M_PI);
-                vel_estimate_ = msg.Vel_Estimate * (2 * M_PI);
+                pos_estimate_ = (msg.Pos_Estimate / gear_ratio) * (2 * M_PI);
+                vel_estimate_ = (msg.Vel_Estimate / gear_ratio) * (2 * M_PI);
             }
         } break;
-        case Get_Torques_msg_t::cmd_id: {
-            if (Get_Torques_msg_t msg; try_decode(msg)) {
-                torque_target_ = msg.Torque_Target;
-                torque_estimate_ = msg.Torque_Estimate;
+
+        case Get_Iq_msg_t::cmd_id: {
+            if (Get_Iq_msg_t msg; try_decode(msg)) {
+                torque_target_ = msg.Iq_Setpoint * torque_constant; // control interface unit: Nm, ODrive unit: A
+                torque_estimate_ = msg.Iq_Measured * torque_constant;
             }
         } break;
             // silently ignore unimplemented command IDs

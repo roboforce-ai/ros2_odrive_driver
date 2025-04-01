@@ -10,7 +10,7 @@ https://docs.odriverobotics.com/v/latest/fibre_types/com_odriverobotics_ODrive.h
 torque control: 
 control mode = 1
 input mode = 1 passthrough mode
-input_torque = in Nm
+input_torque = in A
 ros2 topic pub /odrive_axis0/control_message odrive_can/msg/ControlMessage "{control_mode: 1, input_mode: 1, input_torque: 1.0, input_pos: 0.0, input_vel: 0.0}"
 
 
